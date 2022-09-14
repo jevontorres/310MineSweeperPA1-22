@@ -9,11 +9,14 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.TextView;
+import android.os.Handler;
 
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
+    private int clock = 0;
+    private boolean running = true;
     private static final int COLUMN_COUNT = 8;
 
     // save the TextViews of all cells in an array, so later on,
@@ -29,6 +32,13 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        if (savedInstanceState != null) {
+            clock = savedInstanceState.getInt("clock");
+            running = savedInstanceState.getBoolean("running");
+        }
+
+        runTimer();
 
         cell_tvs = new ArrayList<TextView>();
 
@@ -109,6 +119,32 @@ public class MainActivity extends AppCompatActivity {
 //            }
 //        }
 
+    }
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        super.onSaveInstanceState(savedInstanceState);
+        savedInstanceState.putInt("clock", clock);
+        savedInstanceState.putBoolean("running", running);
+    }
+
+    private void runTimer() {
+        final TextView timeView = (TextView) findViewById(R.id.timer);
+        final Handler handler = new Handler();
+
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                int hours =clock/3600;
+                int minutes = (clock%3600) / 60;
+                int seconds = clock%60;
+                String time = String.format("%d:%02d:%02d", hours, minutes, seconds);
+                timeView.setText(time);
+
+                if (running) {
+                    clock++;
+                }
+                handler.postDelayed(this, 1000);
+            }
+        });
     }
 
     private int findIndexOfCellTextView(TextView tv) {
