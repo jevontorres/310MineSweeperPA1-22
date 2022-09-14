@@ -133,10 +133,10 @@ public class MainActivity extends AppCompatActivity {
         handler.post(new Runnable() {
             @Override
             public void run() {
-                int hours =clock/3600;
-                int minutes = (clock%3600) / 60;
-                int seconds = clock%60;
-                String time = String.format("%d:%02d:%02d", hours, minutes, seconds);
+//                int hours = clock/3600;
+//                int minutes = (clock%3600) / 60;
+//                int seconds = clock%60;
+                String time = String.format("%02d",clock);
                 timeView.setText(time);
 
                 if (running) {
