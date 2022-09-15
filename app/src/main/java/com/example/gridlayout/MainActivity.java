@@ -2,6 +2,8 @@ package com.example.gridlayout;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.gridlayout.widget.GridLayout;
+
+import android.util.Log;
 import android.view.Gravity;
 import android.content.res.Resources;
 import android.graphics.Color;
@@ -12,16 +14,25 @@ import android.widget.TextView;
 import android.os.Handler;
 
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Random;
+import java.util.HashSet;
 
 public class MainActivity extends AppCompatActivity {
 
     private int clock = 0;
     private boolean running = true;
     private static final int COLUMN_COUNT = 8;
-
+    private static final int ROW_COUNT = 10;
+    private boolean[][] revealed;
+    private ArrayList<ArrayList<Integer>> board;
+    private ArrayList<ArrayList<Integer>> adj;
     // save the TextViews of all cells in an array, so later on,
     // when a TextView is clicked, we know which cell it is
-    private ArrayList<TextView> cell_tvs;
+    public ArrayList<TextView> cell_tvs;
+    public HashSet<TextView> bombSet;
+    public HashSet<TextView> revealedSet;
+    public HashSet<TextView> zeroSet;
 
     private int dpToPixel(int dp) {
         float density = Resources.getSystem().getDisplayMetrics().density;
@@ -39,37 +50,17 @@ public class MainActivity extends AppCompatActivity {
         }
 
         runTimer();
-
+        revealedSet = new HashSet<TextView>();
+        zeroSet = new HashSet<TextView>();
+        revealed = new boolean[10][8];
+        for (int i =0;i<9;i++){
+            for (int j=0; j<7;j++){
+                revealed[i][j]=false;
+            }
+        }
         cell_tvs = new ArrayList<TextView>();
 
-        // Method (1): add statically created cells
-//        TextView tv00 = (TextView) findViewById(R.id.textView00);
-//        TextView tv01 = (TextView) findViewById(R.id.textView01);
-//        TextView tv10 = (TextView) findViewById(R.id.textView10);
-//        TextView tv11 = (TextView) findViewById(R.id.textView11);
-//
-//        tv00.setTextColor(Color.GRAY);
-//        tv00.setBackgroundColor(Color.GRAY);
-//        tv00.setOnClickListener(this::onClickTV);
-//
-//        tv01.setTextColor(Color.GRAY);
-//        tv01.setBackgroundColor(Color.GRAY);
-//        tv01.setOnClickListener(this::onClickTV);
-//
-//        tv10.setTextColor(Color.GRAY);
-//        tv10.setBackgroundColor(Color.GRAY);
-//        tv10.setOnClickListener(this::onClickTV);
-//
-//        tv11.setTextColor(Color.GRAY);
-//        tv11.setBackgroundColor(Color.GRAY);
-//        tv11.setOnClickListener(this::onClickTV);
-//
-//        cell_tvs.add(tv00);
-//        cell_tvs.add(tv01);
-//        cell_tvs.add(tv10);
-//        cell_tvs.add(tv11);
-
-        // Method (2): add four dynamically created cells
+        //create the grid
         GridLayout grid = (GridLayout) findViewById(R.id.gridLayout01);
         for (int i = 0; i<=9; i++) {
             for (int j=0; j<=7; j++) {
@@ -99,27 +90,132 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // Method (3): add four dynamically created cells with LayoutInflater
-//        LayoutInflater li = LayoutInflater.from(this);
-//        for (int i = 5; i<=6; i++) {
-//            for (int j=0; j<=1; j++) {
-//                TextView tv = (TextView) li.inflate(R.layout.custom_cell_layout, grid, false);
-//                //tv.setText(String.valueOf(i)+String.valueOf(j));
-//                tv.setTextColor(Color.GRAY);
-//                tv.setBackgroundColor(Color.GRAY);
-//                tv.setOnClickListener(this::onClickTV);
-//
-//                GridLayout.LayoutParams lp = (GridLayout.LayoutParams) tv.getLayoutParams();
-//                lp.rowSpec = GridLayout.spec(i);
-//                lp.columnSpec = GridLayout.spec(j);
-//
-//                grid.addView(tv, lp);
-//
-//                cell_tvs.add(tv);
-//            }
-//        }
-
+        setMines();
+        board = new ArrayList<ArrayList<Integer>>();
+        board = TDMake();
+        adj = new ArrayList<ArrayList<Integer>>();
+        adj = NAMake();
     }
+
+    public void setMines(){
+        int mines = 4;
+        int cells = 80;
+
+        bombSet = new HashSet<>();
+        for (int i = 0; i < mines; i++) {
+            //Get random position for the next bomb
+            Random rand = new Random();
+            int index = rand.nextInt(cells);
+            while(bombSet.contains(cell_tvs.get(index))) {
+                //we get new position
+                index = rand.nextInt(cells);
+            }
+            bombSet.add(cell_tvs.get(index));
+        }
+    }
+
+    //find mines surrounding a cell
+    public int neighbors(int n){
+        int count = 0;
+        int y = n/COLUMN_COUNT;
+        int x = n%COLUMN_COUNT;
+        Log.d("coordinates", String.valueOf(x)+String.valueOf(y));
+        Log.d("mine?", String.valueOf(board.get(y).get(x)));
+        if (board.get(y).get(x)==1){
+            return -1;
+        }
+        if (x>0) {
+            if (board.get(y).get(x - 1) == 1) {
+                count++;
+                Log.d("hint", "mine to left");
+            }
+        }
+        if(x<7) {
+            if (board.get(y).get(x + 1) == 1) {
+                count++;
+                Log.d("hint", "mine to right");
+            }
+        }
+        if (y>0){
+            if (board.get(y-1).get(x) == 1) {
+                count++;
+                Log.d("hint", "mine above");
+            }
+        }
+        if(y<9) {
+            if (board.get(y+1).get(x) == 1) {
+                count++;
+                Log.d("hint", "mine below");
+            }
+        }
+        if (y<9&&x<7){
+            if (board.get(y + 1).get(x + 1) == 1) {
+                count++;
+                Log.d("hint", "mine to bottom right");
+            }
+        }
+        if (y>0&&x>0){
+            if (board.get(y - 1).get(x - 1) == 1) {
+                count++;
+                Log.d("hint", "mine to top left");
+            }
+        }
+        if (y<9&&x>0){
+            if (board.get(y + 1).get(x - 1) == 1) {
+                count++;
+                Log.d("hint", "mine to bottom left");
+            }
+        }
+        if (y>0&&x<7){
+            if (board.get(y - 1).get(x + 1) == 1) {
+                count++;
+                Log.d("hint", "mine to top right");
+            }
+        }
+        return count;
+    }
+
+    //make 2d neighbor array
+    public ArrayList<ArrayList<Integer>> NAMake(){
+        ArrayList<ArrayList<Integer>> NA = new ArrayList<ArrayList<Integer>>();
+        int index = 0;
+        for (int i = 0; i < ROW_COUNT; i++){
+            ArrayList<Integer> R = new ArrayList<Integer>();
+            for (int j = 0; j < COLUMN_COUNT; j++){
+                R.add(neighbors(index));
+                index++;
+            }
+            NA.add(R);
+        }
+        for (int i =0 ; i<10;i++) {
+            Log.d("neighborArray", String.valueOf(NA.get(i)));
+        }
+        return NA;
+    }
+
+    //make 2d mine or empty array
+    public ArrayList<ArrayList<Integer>> TDMake(){
+        ArrayList<ArrayList<Integer>> TD = new ArrayList<ArrayList<Integer>>();
+        int index = 0;
+        for (int i = 0; i < ROW_COUNT; i++){
+            ArrayList<Integer> R = new ArrayList<Integer>();
+            for (int j = 0; j < COLUMN_COUNT; j++){
+                if (bombSet.contains(cell_tvs.get(index))){
+                    R.add(1);
+                }
+                else{
+                    R.add(0);
+                }
+                index++;
+            }
+            TD.add(R);
+        }
+        for (int i =0 ; i<10;i++) {
+            Log.d("DEBUG_MESSAGE", String.valueOf(TD.get(i)));
+        }
+        return TD;
+    }
+
     public void onSaveInstanceState(Bundle savedInstanceState) {
         super.onSaveInstanceState(savedInstanceState);
         savedInstanceState.putInt("clock", clock);
@@ -154,19 +250,86 @@ public class MainActivity extends AppCompatActivity {
         }
         return -1;
     }
+    private void revealNeighbors(int n){
+
+    }
+
+    private void printBool(){
+        for (int y = 0; y<10; y++){
+            String row = "";
+            for (int x =0; x<8;x++){
+
+                if (revealed[y][x]) {
+                    row += " T ";
+
+                }
+                else {
+                    row += " F ";
+                }
+            }
+            Log.d("bool", row);
+        }
+    }
+
+    private void dfs(int x, int y){
+        if (x<0 || y < 0 || x>7 || y>9){
+            return;
+        }
+        if (adj.get(y).get(x)!=0 || revealed[y][x]){
+            return;
+        }
+        else if (adj.get(y).get(x)==0){
+            revealed[y][x]=true;
+            revealedSet.add(cell_tvs.get(y*8+x));
+            zeroSet.add(cell_tvs.get(y*8+x));
+            dfs(x+1,y);
+            dfs(x-1,y);
+            dfs(x,y+1);
+            dfs(x,y-1);
+            dfs(x+1,y+1);
+            dfs(x+1,y-1);
+            dfs(x-1,y+1);
+            dfs(x-1,y-1);
+        }
+    }
 
     public void onClickTV(View view){
         TextView tv = (TextView) view;
         int n = findIndexOfCellTextView(tv);
-        int i = n/COLUMN_COUNT;
-        int j = n%COLUMN_COUNT;
-        tv.setText(String.valueOf(i)+String.valueOf(j));
+        int y = n/COLUMN_COUNT; //y
+        int x = n%COLUMN_COUNT; //x
+        //tv.setText(String.valueOf(i)+String.valueOf(j));
+
+        if(adj.get(y).get(x)==0){
+            dfs(x,y);
+        }
+        else{
+            Log.d("neighbor1", "you clicked a neighbor");
+            revealed[y][x]=true;
+            revealedSet.add(cell_tvs.get(y*8+x));
+        }
+        printBool();
+        if (bombSet.contains(tv)){
+            tv.setTextColor(Color.BLACK);
+            tv.setText(R.string.mine);
+            tv.setBackgroundColor(Color.RED);
+        }
+        else{
+            int neigh = neighbors(n);
+            String count = String.format("%2d",neigh);
+            tv.setText(count);
+        }
+
+        for (TextView viewer : zeroSet) {
+            viewer.setText("0");
+            viewer.setTextColor(Color.GRAY);
+            viewer.setBackgroundColor(Color.LTGRAY);
+        }
         if (tv.getCurrentTextColor() == Color.GRAY) {
-            tv.setTextColor(Color.GREEN);
-            tv.setBackgroundColor(Color.parseColor("lime"));
-        }else {
             tv.setTextColor(Color.GRAY);
             tv.setBackgroundColor(Color.LTGRAY);
         }
+        Log.d("zero count", String.valueOf(zeroSet.size()));
+        Log.d("rev count", String.valueOf(revealedSet.size()));
     }
 }
