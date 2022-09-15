@@ -1,8 +1,10 @@
 package com.example.gridlayout;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.gridlayout.widget.GridLayout;
 
+import android.content.Intent;
 import android.util.Log;
 import android.view.Gravity;
 import android.content.res.Resources;
@@ -14,13 +16,14 @@ import android.widget.TextView;
 import android.os.Handler;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.Random;
 import java.util.HashSet;
 
 public class MainActivity extends AppCompatActivity {
 
     private int clock = 0;
+    public int flags = 4;
+    private boolean win = false;
     private boolean running = true;
     private static final int COLUMN_COUNT = 8;
     private static final int ROW_COUNT = 10;
@@ -30,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     // save the TextViews of all cells in an array, so later on,
     // when a TextView is clicked, we know which cell it is
     public ArrayList<TextView> cell_tvs;
+
     public HashSet<TextView> bombSet;
     public HashSet<TextView> revealedSet;
     public HashSet<TextView> zeroSet;
@@ -114,6 +118,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void endGame(){
+        running = false;
+        Intent intent = new Intent(MainActivity.this,DisplayResults.class);
+        intent.putExtra("win",win);
+        intent.putExtra("clock",clock);
+        startActivity(intent);
+    }
     //find mines surrounding a cell
     public int neighbors(int n){
         int count = 0;
@@ -221,7 +232,11 @@ public class MainActivity extends AppCompatActivity {
         savedInstanceState.putInt("clock", clock);
         savedInstanceState.putBoolean("running", running);
     }
-
+    private void updateFlag(int n){
+        final TextView flagView = (TextView) findViewById(R.id.flagCount);
+        flags+=n;
+        flagView.setText(String.valueOf(flags));
+    }
     private void runTimer() {
         final TextView timeView = (TextView) findViewById(R.id.timer);
         final Handler handler = new Handler();
@@ -249,9 +264,6 @@ public class MainActivity extends AppCompatActivity {
                 return n;
         }
         return -1;
-    }
-    private void revealNeighbors(int n){
-
     }
 
     private void printBool(){
@@ -298,7 +310,6 @@ public class MainActivity extends AppCompatActivity {
         int n = findIndexOfCellTextView(tv);
         int y = n/COLUMN_COUNT; //y
         int x = n%COLUMN_COUNT; //x
-        //tv.setText(String.valueOf(i)+String.valueOf(j));
 
         if(adj.get(y).get(x)==0){
             dfs(x,y);
@@ -313,6 +324,13 @@ public class MainActivity extends AppCompatActivity {
             tv.setTextColor(Color.BLACK);
             tv.setText(R.string.mine);
             tv.setBackgroundColor(Color.RED);
+//                AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
+//                builder1.setMessage("LOSS!");
+//                builder1.setCancelable(true);
+//                AlertDialog alert11 = builder1.create();
+//                alert11.show();
+            win = false;
+            endGame();
         }
         else{
             int neigh = neighbors(n);
@@ -331,5 +349,14 @@ public class MainActivity extends AppCompatActivity {
         }
         Log.d("zero count", String.valueOf(zeroSet.size()));
         Log.d("rev count", String.valueOf(revealedSet.size()));
+        if (revealedSet.size()==76) {
+            win = true;
+//            AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
+//            builder1.setMessage("WIN!");
+//            builder1.setCancelable(true);
+//            AlertDialog alert11 = builder1.create();
+//            alert11.show();
+            endGame();
+        }
     }
 }
