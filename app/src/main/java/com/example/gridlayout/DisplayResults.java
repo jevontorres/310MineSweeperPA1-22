@@ -16,7 +16,7 @@ public class DisplayResults extends AppCompatActivity {
         setContentView(R.layout.results);
 
         Bundle bundle = getIntent().getExtras();
-        boolean win = bundle.getBoolean("my_boolean_key");
+        boolean win = bundle.getBoolean("win");
         int clock = bundle.getInt("clock");
         Log.d("test",String.valueOf(win));
         TextView text = (TextView) findViewById(R.id.results);

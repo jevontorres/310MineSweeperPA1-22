@@ -6,6 +6,7 @@ import androidx.gridlayout.widget.GridLayout;
 
 import android.content.Intent;
 import android.util.Log;
+import android.util.Pair;
 import android.view.Gravity;
 import android.content.res.Resources;
 import android.graphics.Color;
@@ -36,9 +37,11 @@ public class MainActivity extends AppCompatActivity {
 
     public HashSet<TextView> bombSet;
     public HashSet<TextView> revealedSet;
+    public HashSet<Pair<TextView,Integer>> reveal;
     public HashSet<TextView> zeroSet;
 
     private int dpToPixel(int dp) {
+
         float density = Resources.getSystem().getDisplayMetrics().density;
         return Math.round(dp * density);
     }
@@ -56,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
         runTimer();
         revealedSet = new HashSet<TextView>();
         zeroSet = new HashSet<TextView>();
+        reveal = new HashSet<Pair<TextView,Integer>>();
         revealed = new boolean[10][8];
         for (int i =0;i<9;i++){
             for (int j=0; j<7;j++){
@@ -282,18 +286,48 @@ public class MainActivity extends AppCompatActivity {
             Log.d("bool", row);
         }
     }
+    private boolean checkBomb(int x, int y){
+
+            if (board.get(y).get(x) == 1) {
+                return true;
+            }
+
+        return false;
+    }
+
+//    private void revAdj(int x,int y){
+//        if(x<7 && y < 9 && x>0 && y>0) {
+//            if (!checkBomb(x, y)&&adj.get(y).get(x)!=0) {
+//                revealed[y][x] = true;
+//                revealedSet.add(cell_tvs.get(y * 8 + x));
+//                Pair p = new Pair(cell_tvs.get(y*8+x),adj.get(y).get(x));
+//                reveal.add(p);
+//            }
+//        }
+//        return;
+//    }
 
     private void dfs(int x, int y){
         if (x<0 || y < 0 || x>7 || y>9){
             return;
         }
-        if (adj.get(y).get(x)!=0 || revealed[y][x]){
+        if (revealed[y][x]){
+            return;
+        }
+        if (adj.get(y).get(x)>0){
+            revealed[y][x]=true;
+            revealedSet.add(cell_tvs.get(y*8+x));
+            Pair p = new Pair(cell_tvs.get(y*8+x),adj.get(y).get(x));
+            reveal.add(p);
             return;
         }
         else if (adj.get(y).get(x)==0){
             revealed[y][x]=true;
             revealedSet.add(cell_tvs.get(y*8+x));
+            Pair p = new Pair(cell_tvs.get(y*8+x),adj.get(y).get(x));
+            reveal.add(p);
             zeroSet.add(cell_tvs.get(y*8+x));
+
             dfs(x+1,y);
             dfs(x-1,y);
             dfs(x,y+1);
@@ -302,6 +336,7 @@ public class MainActivity extends AppCompatActivity {
             dfs(x+1,y-1);
             dfs(x-1,y+1);
             dfs(x-1,y-1);
+
         }
     }
 
@@ -318,9 +353,13 @@ public class MainActivity extends AppCompatActivity {
             Log.d("neighbor1", "you clicked a neighbor");
             revealed[y][x]=true;
             revealedSet.add(cell_tvs.get(y*8+x));
+            Pair p = new Pair(cell_tvs.get(y*8+x),adj.get(y).get(x));
+            reveal.add(p);
+            tv.setText(String.valueOf(adj.get(y).get(x)));
         }
         printBool();
         if (bombSet.contains(tv)){
+            Log.d("bomb", String.valueOf(checkBomb(x,y)));
             tv.setTextColor(Color.BLACK);
             tv.setText(R.string.mine);
             tv.setBackgroundColor(Color.RED);
@@ -333,16 +372,31 @@ public class MainActivity extends AppCompatActivity {
             endGame();
         }
         else{
-            int neigh = neighbors(n);
-            String count = String.format("%2d",neigh);
-            tv.setText(count);
+//            int neigh = neighbors(n);
+//            String count = String.format("%2d",neigh);
+//            if (neigh!=0) {
+//                tv.setText(count);
+//            };
+            for (Pair p : reveal){
+                TextView viewer = (TextView) p.first;
+                viewer.setText(String.valueOf(p.second));
+                viewer.setTextColor(Color.GRAY);
+                viewer.setBackgroundColor(Color.LTGRAY);
+            }
         }
 
+//        for (TextView viewer : revealedSet) {
+//            viewer.setText("p");
+//            viewer.setTextColor(Color.GRAY);
+//            viewer.setBackgroundColor(Color.LTGRAY);
+//        }
+//w
         for (TextView viewer : zeroSet) {
-            viewer.setText("0");
+            viewer.setText("");
             viewer.setTextColor(Color.GRAY);
             viewer.setBackgroundColor(Color.LTGRAY);
         }
+
         if (tv.getCurrentTextColor() == Color.GRAY) {
             tv.setTextColor(Color.GRAY);
             tv.setBackgroundColor(Color.LTGRAY);
@@ -351,11 +405,6 @@ public class MainActivity extends AppCompatActivity {
         Log.d("rev count", String.valueOf(revealedSet.size()));
         if (revealedSet.size()==76) {
             win = true;
-//            AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
-//            builder1.setMessage("WIN!");
-//            builder1.setCancelable(true);
-//            AlertDialog alert11 = builder1.create();
-//            alert11.show();
             endGame();
         }
     }
