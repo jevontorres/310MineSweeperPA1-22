@@ -2,6 +2,7 @@ package com.example.gridlayout;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.gridlayout.widget.GridLayout;
 
 import android.content.Intent;
@@ -57,8 +58,8 @@ public class MainActivity extends AppCompatActivity {
             clock = savedInstanceState.getInt("clock");
             running = savedInstanceState.getBoolean("running");
         }
-
         runTimer();
+
         revealedSet = new HashSet<TextView>();
         zeroSet = new HashSet<TextView>();
         reveal = new HashSet<Pair<TextView, Integer>>();
@@ -98,14 +99,14 @@ public class MainActivity extends AppCompatActivity {
 
                 cell_tvs.add(tv);
             }
-            Button btnF = (Button)findViewById(R.id.flagging);
+            Button btnF = (Button) findViewById(R.id.flagging);
             btnF.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     digging = false;
                 }
             });
-            Button btnD = (Button)findViewById(R.id.digging);
+            Button btnD = (Button) findViewById(R.id.digging);
             btnD.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -140,10 +141,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void endGame() {
         running = false;
-        Intent intent = new Intent(MainActivity.this, DisplayResults.class);
-        intent.putExtra("win", win);
-        intent.putExtra("clock", clock);
-        startActivity(intent);
     }
 
     //find mines surrounding a cell
@@ -338,72 +335,77 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onClickTV(View view) {
+        if (running == false) {
+            Intent intent = new Intent(MainActivity.this, DisplayResults.class);
+            intent.putExtra("win", win);
+            intent.putExtra("clock", clock);
+            startActivity(intent);
+        } else {
+            TextView tv = (TextView) view;
+            int n = findIndexOfCellTextView(tv);
+            int y = n / COLUMN_COUNT; //y
+            int x = n % COLUMN_COUNT; //x
+            if (digging) {
+                if (adj.get(y).get(x) == 0) {
+                    dfs(x, y);
+                } else {
+                    Log.d("neighbor1", "you clicked a neighbor");
+                    revealed[y][x] = true;
+                    revealedSet.add(cell_tvs.get(y * 8 + x));
+                    Pair p = new Pair(cell_tvs.get(y * 8 + x), adj.get(y).get(x));
+                    reveal.add(p);
+                    tv.setText(String.valueOf(adj.get(y).get(x)));
+                }
+                printBool();
+                if (bombSet.contains(tv)) {
+                    Log.d("bomb", String.valueOf(checkBomb(x, y)));
+                    tv.setTextColor(Color.BLACK);
+                    tv.setText(R.string.mine);
+                    tv.setBackgroundColor(Color.RED);
+                    win = false;
+                    for (TextView bomb : bombSet) {
+                        bomb.setText(R.string.mine);
+                        bomb.setTextColor(Color.GRAY);
+                        bomb.setBackgroundColor(Color.LTGRAY);
+                    }
+                    endGame();
+                } else {
 
-        TextView tv = (TextView) view;
-        int n = findIndexOfCellTextView(tv);
-        int y = n / COLUMN_COUNT; //y
-        int x = n % COLUMN_COUNT; //x
-        if (digging) {
-            if (adj.get(y).get(x) == 0) {
-                dfs(x, y);
-            } else {
-                Log.d("neighbor1", "you clicked a neighbor");
-                revealed[y][x] = true;
-                revealedSet.add(cell_tvs.get(y * 8 + x));
-                Pair p = new Pair(cell_tvs.get(y * 8 + x), adj.get(y).get(x));
-                reveal.add(p);
-                tv.setText(String.valueOf(adj.get(y).get(x)));
-            }
-            printBool();
-            if (bombSet.contains(tv)) {
-                Log.d("bomb", String.valueOf(checkBomb(x, y)));
-                tv.setTextColor(Color.BLACK);
-                tv.setText(R.string.mine);
-                tv.setBackgroundColor(Color.RED);
-//                AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
-//                builder1.setMessage("LOSS!");
-//                builder1.setCancelable(true);
-//                AlertDialog alert11 = builder1.create();
-//                alert11.show();
-                win = false;
-                endGame();
-            } else {
+                    for (Pair p : reveal) {
+                        TextView viewer = (TextView) p.first;
+                        viewer.setText(String.valueOf(p.second));
+                        viewer.setTextColor(Color.GRAY);
+                        viewer.setBackgroundColor(Color.LTGRAY);
+                    }
+                }
 
-                for (Pair p : reveal) {
-                    TextView viewer = (TextView) p.first;
-                    viewer.setText(String.valueOf(p.second));
+                for (TextView viewer : zeroSet) {
+                    viewer.setText("");
                     viewer.setTextColor(Color.GRAY);
                     viewer.setBackgroundColor(Color.LTGRAY);
                 }
-            }
 
-            for (TextView viewer : zeroSet) {
-                viewer.setText("");
-                viewer.setTextColor(Color.GRAY);
-                viewer.setBackgroundColor(Color.LTGRAY);
-            }
-
-            if (tv.getCurrentTextColor() == Color.GRAY) {
-                tv.setTextColor(Color.GRAY);
-                tv.setBackgroundColor(Color.LTGRAY);
-            }
-            Log.d("zero count", String.valueOf(zeroSet.size()));
-            Log.d("rev count", String.valueOf(revealedSet.size()));
-            if (revealedSet.size() == 76) {
-                win = true;
-                endGame();
-            }
-        } else {
-            String hint = (String) tv.getHint();
-            if (flags>0 && hint!="f") {
-                tv.setText(R.string.flag);
-                tv.setHint("f");
-                updateFlag(-1);
-            }
-            else if(hint=="f"){
-                tv.setText("");
-                tv.setHint("");
-                updateFlag(1);
+                if (tv.getCurrentTextColor() == Color.GRAY) {
+                    tv.setTextColor(Color.GRAY);
+                    tv.setBackgroundColor(Color.LTGRAY);
+                }
+                Log.d("zero count", String.valueOf(zeroSet.size()));
+                Log.d("rev count", String.valueOf(revealedSet.size()));
+                if (revealedSet.size() == 76) {
+                    win = true;
+                    endGame();
+                }
+            } else {
+                String hint = (String) tv.getHint();
+                if (flags > 0 && hint != "f") {
+                    tv.setText(R.string.flag);
+                    tv.setHint("f");
+                    updateFlag(-1);
+                } else if (hint == "f") {
+                    tv.setText("");
+                    tv.setHint("");
+                    updateFlag(1);
+                }
             }
         }
     }
