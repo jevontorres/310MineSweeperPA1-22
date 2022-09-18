@@ -24,7 +24,7 @@ public class DisplayResults extends AppCompatActivity {
             text.setText("Used "+String.valueOf(clock)+" seconds.\nYou lost.");
         }
         else{
-            text.setText("Used "+String.valueOf(clock)+" seconds.\nYou Won!.");
+            text.setText("Used "+String.valueOf(clock)+" seconds.\nYou Won!");
         }
         Button btn = (Button)findViewById(R.id.reset);
         btn.setOnClickListener(new View.OnClickListener() {
