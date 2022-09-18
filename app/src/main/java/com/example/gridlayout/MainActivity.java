@@ -399,7 +399,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             } else {
                 String hint = (String) tv.getHint();
-                if (flags > 0 && hint != "f") {
+                if (hint != "f") {
                     tv.setText(R.string.flag);
                     tv.setHint("f");
                     updateFlag(-1);
