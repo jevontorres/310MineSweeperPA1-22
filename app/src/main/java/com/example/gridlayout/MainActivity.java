@@ -1,8 +1,6 @@
 package com.example.gridlayout;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.gridlayout.widget.GridLayout;
 
 import android.content.Intent;
@@ -103,14 +101,13 @@ public class MainActivity extends AppCompatActivity {
             btnF.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    digging = false;
-                }
-            });
-            Button btnD = (Button) findViewById(R.id.digging);
-            btnD.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    digging = true;
+                    digging = !digging;
+                    if (digging){
+                        btnF.setText(R.string.pick);
+                    }
+                    else{
+                        btnF.setText(R.string.flag);
+                    }
                 }
             });
         }
@@ -393,6 +390,11 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("rev count", String.valueOf(revealedSet.size()));
                 if (revealedSet.size() == 76) {
                     win = true;
+                    for (TextView bomb : bombSet) {
+                        bomb.setText(R.string.mine);
+                        bomb.setTextColor(Color.GRAY);
+                        bomb.setBackgroundColor(Color.LTGRAY);
+                    }
                     endGame();
                 }
             } else {
